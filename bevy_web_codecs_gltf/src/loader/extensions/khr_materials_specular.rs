@@ -4,10 +4,12 @@ use gltf::{Document, Material};
 
 use serde_json::Value;
 
+use crate::loader::GltfError;
+
 #[cfg(feature = "pbr_specular_textures")]
 use {
     crate::loader::gltf_ext::material::parse_material_extension_texture, bevy_asset::Handle,
-    bevy_image::Image, bevy_pbr::UvChannel,
+    bevy_image::Image, bevy_mesh::UvChannel,
 };
 
 /// Parsed data from the `KHR_materials_specular` extension.
@@ -45,11 +47,14 @@ impl SpecularExtension {
         _load_context: &mut LoadContext,
         _document: &Document,
         material: &Material,
-    ) -> Option<Self> {
-        let extension = material
-            .extensions()?
-            .get("KHR_materials_specular")?
-            .as_object()?;
+    ) -> Result<Option<Self>, GltfError> {
+        let Some(extension) = material
+            .extensions()
+            .and_then(|extensions| extensions.get("KHR_materials_specular"))
+            .and_then(|extension| extension.as_object())
+        else {
+            return Ok(None);
+        };
 
         #[cfg(feature = "pbr_specular_textures")]
         let (_specular_channel, _specular_texture) = parse_material_extension_texture(
@@ -59,7 +64,7 @@ impl SpecularExtension {
             extension,
             "specularTexture",
             "specular",
-        );
+        )?;
 
         #[cfg(feature = "pbr_specular_textures")]
         let (_specular_color_channel, _specular_color_texture) = parse_material_extension_texture(
@@ -69,9 +74,9 @@ impl SpecularExtension {
             extension,
             "specularColorTexture",
             "specular color",
-        );
+        )?;
 
-        Some(SpecularExtension {
+        Ok(Some(SpecularExtension {
             specular_factor: extension.get("specularFactor").and_then(Value::as_f64),
             #[cfg(feature = "pbr_specular_textures")]
             specular_channel: _specular_channel,
@@ -95,6 +100,6 @@ impl SpecularExtension {
             specular_color_channel: _specular_color_channel,
             #[cfg(feature = "pbr_specular_textures")]
             specular_color_texture: _specular_color_texture,
-        })
+        }))
     }
 }

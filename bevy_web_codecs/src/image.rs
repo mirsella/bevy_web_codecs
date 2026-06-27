@@ -2,6 +2,7 @@ use anyhow::Result;
 use bevy_asset::{AssetLoader, LoadContext, RenderAssetUsages, io::Reader};
 use bevy_image::{Image, ImageSampler, TextureError};
 use bevy_platform::collections::HashMap;
+use bevy_reflect::TypePath;
 use image::DynamicImage;
 use js_sys::Error;
 use serde::{Deserialize, Serialize};
@@ -58,6 +59,7 @@ pub enum ImageFormatSetting {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ImageLoaderSettings {
     pub format: ImageFormatSetting,
+    pub is_srgb: bool,
     pub sampler: ImageSampler,
     pub asset_usage: RenderAssetUsages,
 }
@@ -66,6 +68,7 @@ impl Default for ImageLoaderSettings {
     fn default() -> Self {
         Self {
             format: ImageFormatSetting::default(),
+            is_srgb: true,
             sampler: ImageSampler::Default,
             asset_usage: RenderAssetUsages::default(),
         }
@@ -73,6 +76,7 @@ impl Default for ImageLoaderSettings {
 }
 
 /// Web asset loader for images.
+#[derive(TypePath)]
 pub struct WebImageLoader {
     mime_types: HashMap<&'static str, &'static str>,
     extensions: Vec<&'static str>,
@@ -166,10 +170,10 @@ impl AssetLoader for WebImageLoader {
 
         let mime_type: &str = match &settings.format {
             ImageFormatSetting::FromExtension => {
-                let ext = load_context.path().extension().unwrap().to_str().unwrap();
+                let ext = load_context.path().get_extension().unwrap();
                 self.mime_types.get(ext).ok_or_else(|| FileTextureError {
                     error: TextureError::InvalidImageExtension(format!("{ext:?}")),
-                    path: format!("{}", load_context.path().display()),
+                    path: load_context.path().to_string(),
                 })?
             }
             ImageFormatSetting::MimeType(format) => format,
@@ -180,7 +184,7 @@ impl AssetLoader for WebImageLoader {
         Self::from_buffer(
             &bytes,
             mime_type,
-            true,
+            settings.is_srgb,
             settings.sampler.clone(),
             settings.asset_usage,
         )
@@ -188,7 +192,7 @@ impl AssetLoader for WebImageLoader {
         .map_err(|error| {
             FileTextureError {
                 error,
-                path: format!("{}", path.display()),
+                path: path.to_string(),
             }
             .into()
         })

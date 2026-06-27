@@ -4,6 +4,7 @@
 use bevy::prelude::*;
 use bevy_web_codecs::WebCodecsPlugin;
 use bevy_web_codecs_gltf::{GltfAssetLabel, GltfPlugin};
+use bevy_world_serialization::WorldAssetRoot;
 
 fn main() {
     App::new()
@@ -22,7 +23,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
         .spawn(Camera3d::default())
         .insert(Transform::from_xyz(-0.7, 0.7, 1.0).looking_at(vec3(0.0, 0.3, 0.0), Vec3::Y));
 
-    commands.spawn(SceneRoot(asset_server.load(
+    commands.spawn(WorldAssetRoot(asset_server.load(
         GltfAssetLabel::Scene(0).from_asset("MixedLightingExample.gltf"),
     )));
 }

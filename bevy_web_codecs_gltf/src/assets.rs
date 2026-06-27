@@ -10,7 +10,7 @@ use bevy_mesh::{skinning::SkinnedMeshInverseBindposes, Mesh};
 use bevy_pbr::StandardMaterial;
 use bevy_platform::collections::HashMap;
 use bevy_reflect::{prelude::ReflectDefault, Reflect, TypePath};
-use bevy_scene::Scene;
+use bevy_world_serialization::WorldAsset;
 
 use crate::GltfAssetLabel;
 
@@ -18,9 +18,9 @@ use crate::GltfAssetLabel;
 #[derive(Asset, Debug, TypePath)]
 pub struct Gltf {
     /// All scenes loaded from the glTF file.
-    pub scenes: Vec<Handle<Scene>>,
+    pub scenes: Vec<Handle<WorldAsset>>,
     /// Named scenes loaded from the glTF file.
-    pub named_scenes: HashMap<Box<str>, Handle<Scene>>,
+    pub named_scenes: HashMap<Box<str>, Handle<WorldAsset>>,
     /// All meshes loaded from the glTF file.
     pub meshes: Vec<Handle<GltfMesh>>,
     /// Named meshes loaded from the glTF file.
@@ -38,7 +38,7 @@ pub struct Gltf {
     /// Named skins loaded from the glTF file.
     pub named_skins: HashMap<Box<str>, Handle<GltfSkin>>,
     /// Default scene to be displayed.
-    pub default_scene: Option<Handle<Scene>>,
+    pub default_scene: Option<Handle<WorldAsset>>,
     /// All animations loaded from the glTF file.
     #[cfg(feature = "bevy_animation")]
     pub animations: Vec<Handle<AnimationClip>>,

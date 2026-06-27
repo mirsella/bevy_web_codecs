@@ -4,10 +4,12 @@ use gltf::{Document, Material};
 
 use serde_json::Value;
 
+use crate::loader::GltfError;
+
 #[cfg(feature = "pbr_multi_layer_material_textures")]
 use {
     crate::loader::gltf_ext::material::parse_material_extension_texture, bevy_asset::Handle,
-    bevy_image::Image, bevy_pbr::UvChannel,
+    bevy_image::Image, bevy_mesh::UvChannel,
 };
 
 /// Parsed data from the `KHR_materials_clearcoat` extension.
@@ -45,11 +47,14 @@ impl ClearcoatExtension {
         load_context: &mut LoadContext,
         document: &Document,
         material: &Material,
-    ) -> Option<ClearcoatExtension> {
-        let extension = material
-            .extensions()?
-            .get("KHR_materials_clearcoat")?
-            .as_object()?;
+    ) -> Result<Option<ClearcoatExtension>, GltfError> {
+        let Some(extension) = material
+            .extensions()
+            .and_then(|extensions| extensions.get("KHR_materials_clearcoat"))
+            .and_then(|extension| extension.as_object())
+        else {
+            return Ok(None);
+        };
 
         #[cfg(feature = "pbr_multi_layer_material_textures")]
         let (clearcoat_channel, clearcoat_texture) = parse_material_extension_texture(
@@ -59,7 +64,7 @@ impl ClearcoatExtension {
             extension,
             "clearcoatTexture",
             "clearcoat",
-        );
+        )?;
 
         #[cfg(feature = "pbr_multi_layer_material_textures")]
         let (clearcoat_roughness_channel, clearcoat_roughness_texture) =
@@ -70,19 +75,20 @@ impl ClearcoatExtension {
                 extension,
                 "clearcoatRoughnessTexture",
                 "clearcoat roughness",
-            );
+            )?;
 
         #[cfg(feature = "pbr_multi_layer_material_textures")]
-        let (clearcoat_normal_channel, clearcoat_normal_texture) = parse_material_extension_texture(
-            material,
-            load_context,
-            document,
-            extension,
-            "clearcoatNormalTexture",
-            "clearcoat normal",
-        );
+        let (clearcoat_normal_channel, clearcoat_normal_texture) =
+            parse_material_extension_texture(
+                material,
+                load_context,
+                document,
+                extension,
+                "clearcoatNormalTexture",
+                "clearcoat normal",
+            )?;
 
-        Some(ClearcoatExtension {
+        Ok(Some(ClearcoatExtension {
             clearcoat_factor: extension.get("clearcoatFactor").and_then(Value::as_f64),
             clearcoat_roughness_factor: extension
                 .get("clearcoatRoughnessFactor")
@@ -99,6 +105,6 @@ impl ClearcoatExtension {
             clearcoat_normal_channel,
             #[cfg(feature = "pbr_multi_layer_material_textures")]
             clearcoat_normal_texture,
-        })
+        }))
     }
 }

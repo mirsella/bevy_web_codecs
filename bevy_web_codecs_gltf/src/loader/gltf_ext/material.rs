@@ -1,6 +1,6 @@
+use bevy_material::AlphaMode;
 use bevy_math::Affine2;
-use bevy_pbr::UvChannel;
-use bevy_render::alpha::AlphaMode;
+use bevy_mesh::UvChannel;
 
 use gltf::{json::texture::Info, Material};
 
@@ -11,6 +11,13 @@ use crate::GltfAssetLabel;
 use super::texture::texture_transform_to_affine2;
 
 #[cfg(any(
+    feature = "pbr_anisotropy_texture",
+    feature = "pbr_specular_textures",
+    feature = "pbr_multi_layer_material_textures"
+))]
+use crate::loader::GltfError;
+#[cfg(any(
+    feature = "pbr_anisotropy_texture",
     feature = "pbr_specular_textures",
     feature = "pbr_multi_layer_material_textures"
 ))]
@@ -25,6 +32,7 @@ use {
 /// Parses a texture that's part of a material extension block and returns its
 /// UV channel and image reference.
 #[cfg(any(
+    feature = "pbr_anisotropy_texture",
     feature = "pbr_specular_textures",
     feature = "pbr_multi_layer_material_textures"
 ))]
@@ -35,17 +43,25 @@ pub(crate) fn parse_material_extension_texture(
     extension: &Map<String, Value>,
     texture_name: &str,
     texture_kind: &str,
-) -> (UvChannel, Option<Handle<Image>>) {
-    match extension
-        .get(texture_name)
-        .and_then(|value| value::from_value::<Info>(value.clone()).ok())
-    {
-        Some(json_info) => (
-            uv_channel(material, texture_kind, json_info.tex_coord),
-            Some(texture_handle_from_info(&json_info, document, load_context)),
-        ),
-        None => (UvChannel::default(), None),
-    }
+) -> Result<(UvChannel, Option<Handle<Image>>), GltfError> {
+    let Some(value) = extension.get(texture_name) else {
+        return Ok((UvChannel::default(), None));
+    };
+    let json_info = value::from_value::<Info>(value.clone()).map_err(|source| {
+        GltfError::InvalidMaterialExtensionTexture {
+            texture_name: texture_name.to_string(),
+            source,
+        }
+    })?;
+
+    Ok((
+        uv_channel(material, texture_kind, json_info.tex_coord),
+        Some(texture_handle_from_info(
+            &json_info,
+            document,
+            load_context,
+        )?),
+    ))
 }
 
 pub(crate) fn uv_channel(material: &Material, texture_kind: &str, tex_coord: u32) -> UvChannel {

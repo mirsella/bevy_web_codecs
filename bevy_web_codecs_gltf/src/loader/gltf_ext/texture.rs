@@ -14,25 +14,32 @@ use gltf::{
 ))]
 use gltf::{json::texture::Info, Document};
 
-use crate::{loader::DataUri, GltfAssetLabel};
+use crate::{
+    loader::{DataUri, GltfError},
+    GltfAssetLabel,
+};
 
 pub(crate) fn texture_handle(
     texture: &Texture<'_>,
     load_context: &mut LoadContext,
-) -> Handle<Image> {
+) -> Result<Handle<Image>, GltfError> {
     match texture.source().source() {
-        Source::View { .. } => load_context.get_label_handle(texture_label(texture).to_string()),
+        Source::View { .. } => {
+            Ok(load_context.get_label_handle(texture_label(texture).to_string()))
+        }
         Source::Uri { uri, .. } => {
             let uri = percent_encoding::percent_decode_str(uri)
                 .decode_utf8()
                 .unwrap();
             let uri = uri.as_ref();
             if let Ok(_data_uri) = DataUri::parse(uri) {
-                load_context.get_label_handle(texture_label(texture).to_string())
+                Ok(load_context.get_label_handle(texture_label(texture).to_string()))
             } else {
-                let parent = load_context.path().parent().unwrap();
-                let image_path = parent.join(uri);
-                load_context.load(image_path)
+                let image_path = load_context
+                    .path()
+                    .resolve_embed_str(uri)
+                    .map_err(|err| GltfError::InvalidImageUri(uri.to_owned(), err))?;
+                Ok(load_context.load(image_path))
             }
         }
     }
@@ -117,10 +124,11 @@ pub(crate) fn texture_handle_from_info(
     info: &Info,
     document: &Document,
     load_context: &mut LoadContext,
-) -> Handle<Image> {
+) -> Result<Handle<Image>, GltfError> {
+    let index = info.index.value();
     let texture = document
         .textures()
-        .nth(info.index.value())
-        .expect("Texture info references a nonexistent texture");
+        .nth(index)
+        .ok_or(GltfError::InvalidTextureIndex { index })?;
     texture_handle(&texture, load_context)
 }
