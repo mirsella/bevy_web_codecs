@@ -41,7 +41,7 @@ bevy_platform = { version = "0.19.0", default-features = false, features = [
   "serialize",
 ] }
 
-bevy_web_codecs = { path = "../bevy_web_codecs", version = "0.2" }
+bevy_web_codecs = { path = "../bevy_web_codecs", version = "0.3" }
 
 # other
 gltf = { version = "1.4.0", default-features = false, features = [

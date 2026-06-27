@@ -13,7 +13,7 @@ This crate is only supported on wasm targets.
 
 ```toml
 [dependencies]
-bevy_web_codecs = "0.2"
+bevy_web_codecs = "0.3"
 ```
 
 ```rust
@@ -86,7 +86,7 @@ depending on your browser.
 
 | bevy | bevy_web_codecs | bevy_web_codecs_gltf |
 | ---- | --------------- | -------------------- |
-| 0.19 | 0.2             | 0.19.0               |
+| 0.19 | 0.3             | 0.19.0               |
 | 0.17 | 0.2             | 0.17.1               |
 | 0.16 | 0.1             | 0.16.1               |
 
