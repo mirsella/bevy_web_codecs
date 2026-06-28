@@ -1,8 +1,3 @@
-#![expect(
-    clippy::std_instead_of_core,
-    reason = "core::io::ErrorKind is unstable on the current toolchain"
-)]
-
 mod extensions;
 mod gltf_ext;
 
