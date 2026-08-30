@@ -33,11 +33,11 @@ export class BevyImageDecoder {
 
   copy(buffer) {
     if (this.usingImageDecoder) {
-      return this.data.copyTo(buffer, { format: 'RGBA' });
-    } else {
-      buffer.set(this.data);
-      return Promise.resolve();
+      const frame = this.data;
+      return frame.copyTo(buffer, { format: 'RGBA' }).finally(() => frame.close());
     }
+    buffer.set(this.data);
+    return Promise.resolve();
   }
 }
 
